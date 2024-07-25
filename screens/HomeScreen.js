@@ -17,16 +17,36 @@ import ProgressBar from 'react-native-progress/Bar';
 import configureBackgroundFetch from '../components/BackgroundFetchConfig';
 import { showNotification } from '../components/PushNotificationConfig';
 import { createNotificationChannel } from '../components/PushNotificationConfig'
+import checkESP32Server from "../components/checkESP32Server";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import {StackActions, useIsFocused} from '@react-navigation/native';
 
-const HomeScreen = () => {
+const HomeScreen = ({ navigation }) => {
     const [refreshing, setRefreshing] = useState(false);
     const [sensorData, setSensorData] = useState({});
     const [isLoading, setLoading] = useState(true);
     const { tempPref } = useContext(AppContext);
-    const { serverIP } = useContext(AppContext);
+    const {serverIP, setServerIP} = useContext(AppContext);
     const [ healthData, setHealthData] = useState({});
+    const isFocused = useIsFocused();
+    const [stopFetch, setStopFetch] = useState(false);
 
-    const ESP32URL = `http://${serverIP}:8081/`;
+    const fetchIP = async () => {
+        const storedIP = await AsyncStorage.getItem('serverIP');
+        console.log(storedIP);
+        setServerIP(storedIP);
+        if (storedIP) {
+            const serverRunning = await checkESP32Server(storedIP);
+            //console.log(serverRunning);
+            if(!serverRunning) {
+                setStopFetch(true);
+                navigation.dispatch(
+                    StackActions.replace('ConnectESP32')
+                );
+            }
+        }
+    }
+
 
     const requestNotificationPermission = async () => {
         if (Platform.OS === 'android') {
@@ -94,22 +114,22 @@ const HomeScreen = () => {
 
     const getSensorData = async () => {
         try {
+            const ESP32URL = `http://${serverIP}:8081/`;
             const response = await fetch(ESP32URL);
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
             }
             console.log(response);
             const json = await response.json();
-            console.log(json);
             if (json.dataFromPIC) {
-                console.log(json.dataFromPIC);
+                //console.log(json.dataFromPIC);
                 const data = parseData(json.dataFromPIC);
                 setSensorData(data);
             } else {
                 //console.error('dataFromPIC not found in response');
             }
             if(json.healthStatus) {
-                console.log(json.healthStatus);
+                //console.log(json.healthStatus);
                 const data = parseHealth(json.healthStatus);
                 setHealthData(data);
                 if (data.hRStatus === 'Abnormal') {
@@ -135,22 +155,24 @@ const HomeScreen = () => {
     useEffect(() => {
         configureBackgroundFetch();
         createNotificationChannel();
-
+        fetchIP();
     }, []);
+
 
     useEffect(() => {
-        const interval = setInterval(() => {
-            if (serverIP) {
-                getSensorData();
-            }
-        }, 10000);
-
-        return () => clearInterval(interval);
-    }, []);
+        if (serverIP && isFocused && (!stopFetch)) {
+            getSensorData();
+            const interval = setInterval(getSensorData, 10000);
+            return () => clearInterval(interval);
+        }
+    }, [serverIP, isFocused]);
 
     const onRefresh = async () => {
         setRefreshing(true);
-        await getSensorData();
+        fetchIP();
+        if(!stopFetch) {
+            getSensorData();
+        }
         setRefreshing(false);
     };
 

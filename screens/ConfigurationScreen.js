@@ -12,6 +12,7 @@ import { View, Text, StyleSheet, useColorScheme } from 'react-native';
 import MCIIcon from "react-native-vector-icons/MaterialCommunityIcons";
 import FA6Icon from "react-native-vector-icons/FontAwesome6";
 import AppContext from "../global/AppContext";
+import { useIsFocused } from '@react-navigation/native';
 
 const ScheduleItem = ({ title, time }) => {
     const styles = setColorScheme();
@@ -27,6 +28,7 @@ const ScheduleItem = ({ title, time }) => {
 
 const ConfigurationScreen = () => {
     const styles = setColorScheme();
+    const isFocused = useIsFocused();
     const colors = useColorScheme();
     const petName = "Bella";
     const foodType = "Pedigree";
@@ -96,12 +98,12 @@ const ConfigurationScreen = () => {
     };
 
     useEffect(() => {
-        if (serverIP) {  // Only fetch if serverIP is available
+        if (serverIP && isFocused) {
             getSchedule();
-            const interval = setInterval(getSchedule, 1000);
+            const interval = setInterval(getSchedule, 10000);
             return () => clearInterval(interval);
         }
-    }, [serverIP]);
+    }, [serverIP, isFocused]);
 
     const iconColor = colors === 'dark' ? 'black' : 'white';
     const iconBG = colors === 'dark' ? 'white' : 'black';

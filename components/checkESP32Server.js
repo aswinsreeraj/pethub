@@ -2,6 +2,7 @@ const checkESP32Server = async (serverIP) => {
     const ESP32URL = `http://${serverIP}:8081/`;
     try {
         const response = await fetch(ESP32URL);
+        //console.log(response);
         if (response.ok) {
             return true;
         }

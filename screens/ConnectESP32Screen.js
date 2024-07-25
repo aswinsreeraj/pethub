@@ -28,6 +28,7 @@ import base64 from 'react-native-base64';
 import MCIIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import AppContext from '../global/AppContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import {useIsFocused} from "@react-navigation/native";
 
 const SERVICE_UUID = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
 const CHARACTERISTIC_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
@@ -35,6 +36,7 @@ const CHARACTERISTIC_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
 const manager = new BleManager();
 
 const ConnectESP32Screen = ({ navigation }) => {
+    const isFocused = useIsFocused();
     const [device, setDevice] = useState(null);
     const [ssid, setSSID] = useState('');
     const [password, setPassword] = useState('');
@@ -49,11 +51,11 @@ const ConnectESP32Screen = ({ navigation }) => {
     const iconSize = 20;
     const [showPassword, setShowPassword] = useState(false);
 
-    const ESP32URL = `http://${serverIP}:80/`;
+    const ESP32URL = `http://${serverIP}:8081/`;
 
     useEffect(() => {
         const subscription = manager.onStateChange((state) => {
-            if (state === 'PoweredOn') {
+            if (state === 'PoweredOn' && isFocused) {
                 requestPermissions();
             }
         }, true);
@@ -68,9 +70,10 @@ const ConnectESP32Screen = ({ navigation }) => {
         }
     }, [colors]);
 
-    const saveIP = async () => {
+    const saveIP = async (ipaddress) => {
         try {
-            await AsyncStorage.setItem('serverIP', serverIP);
+            await AsyncStorage.setItem('serverIP', ipaddress);
+            console.log(ipaddress);
         }
         catch (error) {
             console.error('Storage Error: ', error)
@@ -143,7 +146,7 @@ const ConnectESP32Screen = ({ navigation }) => {
                                 return;
                             }
                             setServerIP(base64.decode(characteristic.value));
-                            saveIP();
+                            saveIP(base64.decode(characteristic.value));
                         });
                     })
                     .catch((error) => {
@@ -156,7 +159,7 @@ const ConnectESP32Screen = ({ navigation }) => {
 
     const onRefresh = async () => {
         setRefreshing(true);
-        fetchSSID();
+        await requestPermissions();
         setRefreshing(false);
     };
 
@@ -172,7 +175,7 @@ const ConnectESP32Screen = ({ navigation }) => {
         device.writeCharacteristicWithResponseForService(SERVICE_UUID, CHARACTERISTIC_UUID, encodedData)
             .then(() => {
                 console.log('WiFi credentials sent successfully');
-                navigation.replace('MainTabs'); // Navigate to MainTabs after successful connection
+                navigation.replace('MainTabs');
             })
             .catch((error) => {
                 console.log('Send error:', error);
@@ -223,11 +226,6 @@ const ConnectESP32Screen = ({ navigation }) => {
             <TouchableOpacity style={styles.button} onPress={sendWiFiCredentials}>
                 <Text style={styles.buttonText}>Send WiFi Credentials</Text>
             </TouchableOpacity>
-            {serverIP ? (
-                <Text style={styles.normalText}>Server IP:
-                    <Text style={styles.reactiveText}> {ESP32URL}</Text>
-                </Text>
-            ) : null}
         </ScrollView>
     );
 };

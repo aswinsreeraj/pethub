@@ -7,7 +7,7 @@
 
 	Description: Code for index file of the app. The app runs from this code.
 ---------------------------------------------------------------------------*/
-import React from 'react';
+import React, {useContext} from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
@@ -32,7 +32,7 @@ const MainTabs = () => {
     const colors = useColorScheme();
     return (
         <Tab.Navigator
-            initialRouteName="ConnectESP32"
+            initialRouteName="Home"
             screenOptions={({ route }) => ({
                 headerShown: false,
                 tabBarIcon: ({ color, size }) => {
@@ -70,15 +70,25 @@ const App = () => {
         const initializeApp = async () => {
             try {
                 const storedIP = await AsyncStorage.getItem('serverIP');
+                //console.log(storedIP);
                 if (storedIP) {
                     const serverRunning = await checkESP32Server(storedIP);
-                    setInitialRoute(serverRunning ? 'HomeScreen' : 'ConnectESP32Screen');
+                    //console.log(serverRunning);
+                    if (serverRunning) {
+                        setInitialRoute('MainTabs');
+                    } else {
+                        setInitialRoute('ConnectESP32');
+                    }
+                    //setInitialRoute(serverRunning ? 'MainTabs' : 'ConnectESP32');
+                    console.log(initialRoute);
                 } else {
-                    setInitialRoute('ConnectESP32Screen');
+                    setInitialRoute('ConnectESP32');
+                    console.log(storedIP);
+                    console.log('No Server');
                 }
             } catch (error) {
                 console.error('Error initializing app:', error);
-                setInitialRoute('ConnectESP32Screen');
+                setInitialRoute('ConnectESP32');
             }
         };
 
@@ -92,7 +102,7 @@ const App = () => {
         <SafeAreaProvider>
             <AppProvider>
                 <NavigationContainer independent={true}>
-                    <Stack.Navigator initialRouteName="ConnectESP32">
+                    <Stack.Navigator initialRouteName={initialRoute}>
                         <Stack.Screen
                             name="ConnectESP32"
                             component={ConnectESP32Screen}
