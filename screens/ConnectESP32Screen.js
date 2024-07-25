@@ -27,6 +27,7 @@ import { BleManager } from 'react-native-ble-plx';
 import base64 from 'react-native-base64';
 import MCIIcon from 'react-native-vector-icons/MaterialCommunityIcons';
 import AppContext from '../global/AppContext';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SERVICE_UUID = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
 const CHARACTERISTIC_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
@@ -66,6 +67,16 @@ const ConnectESP32Screen = ({ navigation }) => {
             StatusBar.setBackgroundColor(colors === 'dark' ? 'black' : 'white');
         }
     }, [colors]);
+
+    const saveIP = async () => {
+        try {
+            await AsyncStorage.setItem('serverIP', serverIP);
+        }
+        catch (error) {
+            console.error('Storage Error: ', error)
+        }
+
+    }
 
     const requestPermissions = async () => {
         if (Platform.OS === 'android') {
@@ -132,6 +143,7 @@ const ConnectESP32Screen = ({ navigation }) => {
                                 return;
                             }
                             setServerIP(base64.decode(characteristic.value));
+                            saveIP();
                         });
                     })
                     .catch((error) => {

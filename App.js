@@ -20,6 +20,9 @@ import { AppProvider } from './global/AppContext';
 import ConnectESP32Screen from './screens/ConnectESP32Screen';
 import 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import checkESP32Server from "./components/checkESP32Server";
+import {useEffect, useState} from "react";
 
 
 const Tab = createBottomTabNavigator();
@@ -61,6 +64,30 @@ const MainTabs = () => {
 };
 
 const App = () => {
+    const [initialRoute, setInitialRoute] = useState(null);
+
+    useEffect(() => {
+        const initializeApp = async () => {
+            try {
+                const storedIP = await AsyncStorage.getItem('serverIP');
+                if (storedIP) {
+                    const serverRunning = await checkESP32Server(storedIP);
+                    setInitialRoute(serverRunning ? 'HomeScreen' : 'ConnectESP32Screen');
+                } else {
+                    setInitialRoute('ConnectESP32Screen');
+                }
+            } catch (error) {
+                console.error('Error initializing app:', error);
+                setInitialRoute('ConnectESP32Screen');
+            }
+        };
+
+        initializeApp();
+    }, []);
+
+    if (!initialRoute) {
+        return null; // Or some loading screen
+    }
     return (
         <SafeAreaProvider>
             <AppProvider>
