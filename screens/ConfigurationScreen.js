@@ -8,24 +8,21 @@
 	Description: Configuration Screen for schedule and core module configuration
 ---------------------------------------------------------------------------*/
 import React, {useContext, useEffect, useState} from 'react';
-import { View, Text, StyleSheet, useColorScheme } from 'react-native';
+import { View, Text, StyleSheet, useColorScheme, ScrollView } from 'react-native';
 import MCIIcon from "react-native-vector-icons/MaterialCommunityIcons";
 import FA6Icon from "react-native-vector-icons/FontAwesome6";
 import AppContext from "../global/AppContext";
 import { useIsFocused } from '@react-navigation/native';
+import Logo from "../components/Logo";
 
-const ScheduleItem = ({ title, time }) => {
-    const styles = setColorScheme();
-    return (
-        <View style={styles.item}>
-            <View>
-                <Text style={styles.title}>{title}</Text>
-            </View>
-            <Text style={styles.time}>{time}</Text>
-        </View>
-    );
-}
-
+/*>>> ConfigurationScreen: =====================================================
+Author:		Aswin Sreeraj
+Date:		20/06/2024
+Modified:	None
+Desc:		Set up Esp32 connection user interface
+Input: 		None
+Returns:	None
+=============================================================================*/
 const ConfigurationScreen = () => {
     const styles = setColorScheme();
     const isFocused = useIsFocused();
@@ -40,12 +37,22 @@ const ConfigurationScreen = () => {
 
     const ESP32URL = `http://${serverIP}:8081/`;
 
+    const ScheduleItem = ({ title, time }) => {
+        const styles = setColorScheme();
+        return (
+            <View style={styles.item}>
+                <View>
+                    <Text style={styles.title}>{title}</Text>
+                </View>
+                <Text style={styles.time}>{time}</Text>
+            </View>
+        ); // eo return
+    } // eo ScheduleItem::
+
     const parseSchedule = (dataString) => {
         if (!dataString) return [];
         const dataSegments = dataString.split('#');
-        let scheduleTimes = [];
-
-        dataSegments.forEach(segment => {
+        return dataSegments.reduce((scheduleTimes, segment) => {
             const values = segment.replace('$', '').split(',');
             const commandCode = parseInt(values[0], 10);
             if (commandCode === 2) {
@@ -54,12 +61,11 @@ const ConfigurationScreen = () => {
                     const hours = time.slice(0, 2);
                     return `${hours}:00`;
                 });
-                scheduleTimes.push(...times);
+                return times;
             }
-        });
-
-        return scheduleTimes;
-    };
+            return scheduleTimes;
+        }, []); // eo return
+    }; // eo parseSchedule
 
     const parseData = (dataString) => {
         if (!dataString) return {};
@@ -73,19 +79,19 @@ const ConfigurationScreen = () => {
                 data.portionSize = parseInt(values[1], 10);
                 data.roomTemp = parseInt(values[2], 10);
             }
-        });
+        }); // eo forEach
 
         return data;
-    };
+    }; // eo parseData
 
     const getSchedule = async () => {
         try {
             const response = await fetch(ESP32URL);
             const json = await response.json();
-            if (json.dataFromPIC) {
-                const scheduleTimes = parseSchedule(json.dataFromPIC);
+            if (json.configData) {
+                const scheduleTimes = parseSchedule(json.configData);
                 setScheduleData(scheduleTimes);
-                const data = parseData(json.dataFromPIC);
+                const data = parseData(json.configData);
                 setConfigData(data);
             } else {
                 console.error('dataFromPIC not found in response');
@@ -94,8 +100,8 @@ const ConfigurationScreen = () => {
             console.error('Error fetching schedule and config data:', error);
         } finally {
             setLoading(false)
-        }
-    };
+        } // eo try-catch-finally
+    }; // eo getSchedule::
 
     useEffect(() => {
         if (serverIP && isFocused) {
@@ -103,15 +109,18 @@ const ConfigurationScreen = () => {
             const interval = setInterval(getSchedule, 10000);
             return () => clearInterval(interval);
         }
-    }, [serverIP, isFocused]);
+    }, [serverIP, isFocused]); // eo useEffect
 
     const iconColor = colors === 'dark' ? 'black' : 'white';
     const iconBG = colors === 'dark' ? 'white' : 'black';
     const iconSize = 20;
 
     return (
-        <View style={styles.container}>
-            <Text style={styles.header}>Pet HUB</Text>
+        <ScrollView style={styles.container}>
+            <View style={styles.headerContainer}>
+                <Logo />
+                <Text style={styles.header}>Pet HUB</Text>
+            </View>
             <View style={styles.section}>
                 <View style={styles.row}>
                     <MCIIcon
@@ -144,9 +153,9 @@ const ConfigurationScreen = () => {
                     <ScheduleItem key={index} title={`Schedule ${index + 1}`} time={time} />
                 ))
             )}
-        </View>
-    );
-};
+        </ScrollView>
+    ); // eo return
+}; // eo ConfigurationScreen::
 
 const setColorScheme = () => {
     const colors = useColorScheme();
@@ -157,6 +166,13 @@ const setColorScheme = () => {
             padding: 20,
             paddingTop: '15%',
             backgroundColor: colors === 'dark' ? 'black' : 'white',
+        },
+        headerContainer: {
+            marginTop: 20,
+            flexDirection: 'row',
+            alignContent: 'center',
+            justifyItems: 'center',
+            marginBottom: 20,
         },
         header: {
             fontSize: 28,
@@ -224,7 +240,7 @@ const setColorScheme = () => {
             borderBottomColor: 'gray'
         }
     });
-}
+} // eo setColorScheme
 
 export default ConfigurationScreen;
 

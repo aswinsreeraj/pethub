@@ -13,6 +13,14 @@ import AppContext from '../global/AppContext';
 import {useContext, useState} from "react";
 
 
+/*>>> MyHeadlessTask: =====================================================
+Author:		Aswin Sreeraj
+Date:		20/06/2024
+Modified:	None
+Desc:		Set up headless task for background fetch
+Input: 		None
+Returns:	None
+==========================================================================*/
 let MyHeadlessTask = async (event) => {
     const { serverIP } = useContext(AppContext);
 
@@ -25,20 +33,29 @@ let MyHeadlessTask = async (event) => {
 
         if (healthData.hRStatus === 'Abnormal') {
             showNotification('Health Alert', 'Heart rate is abnormal!');
-        }
+        } // eo if
 
         if (healthData.bodyTempStatus === 'High') {
             showNotification('Health Alert', 'Body temperature is high!');
-        }
+        } // eo if
     } catch (error) {
         console.error('Error fetching sensor data:', error.message);
-    }
+    } // eo try-catch
 
     BackgroundFetch.finish(BackgroundFetch.FETCH_RESULT_NEW_DATA);
-};
+}; // eo MyHeadlessTask::
+
 
 BackgroundFetch.registerHeadlessTask(MyHeadlessTask);
 
+/*>>> configureBackgroundFetch: ================================================
+Author:		Aswin Sreeraj
+Date:		20/06/2024
+Modified:	None
+Desc:		Configuration for the background fetch
+Input: 		None
+Returns:	None
+=============================================================================*/
 const configureBackgroundFetch = () => {
     BackgroundFetch.configure(
         {
@@ -55,9 +72,18 @@ const configureBackgroundFetch = () => {
         (error) => {
             console.log("[BackgroundFetch] failed to start:", error);
         }
-    );
-};
+    ) // eo BackgroundFetch.configure
+}; // eo configureBackgroundFetch::
 
+
+/*>>> parseHealth: =====================================================
+Author:		Aswin Sreeraj
+Date:		20/06/2024
+Modified:	None
+Desc:		Parse the data to added to the background fetch task
+Input: 		String dataString, data to be parsed
+Returns:	None
+=======================================================================*/
 const parseHealth = (dataString) => {
     if (!dataString) return {};
     const data = {};
@@ -69,7 +95,7 @@ const parseHealth = (dataString) => {
     data.bodyTempStatus = values[1].trim();
 
     return data;
-};
+}; // eo parseHealth::
 
 export default configureBackgroundFetch;
 

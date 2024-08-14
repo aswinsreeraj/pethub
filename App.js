@@ -7,6 +7,8 @@
 
 	Description: Code for index file of the app. The app runs from this code.
 ---------------------------------------------------------------------------*/
+
+// Import dependencies ========================================================
 import React, {useContext} from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -23,11 +25,19 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import checkESP32Server from "./components/checkESP32Server";
 import {useEffect, useState} from "react";
-
+//===============================================================================
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
 
+/*>>> MainTabs: ===========================================================
+Author:		Aswin Sreeraj
+Date:		20/06/2024
+Modified:	None
+Desc:		Set up tab navigation while inside the user dashboard
+Input: 		None
+Returns:	None
+=============================================================================*/
 const MainTabs = () => {
     const colors = useColorScheme();
     return (
@@ -60,11 +70,11 @@ const MainTabs = () => {
             <Tab.Screen name="Configuration" component={ConfigurationScreen} />
             <Tab.Screen name="Settings" component={SettingsScreen} />
         </Tab.Navigator>
-    );
-};
+    ); // eo return
+}; // eo MainTabs::
 
 const App = () => {
-    const [initialRoute, setInitialRoute] = useState(null);
+    const [initialRoute, setInitialRoute] = useState('ConnectESP32');
 
     useEffect(() => {
         const initializeApp = async () => {
@@ -85,19 +95,19 @@ const App = () => {
                     setInitialRoute('ConnectESP32');
                     console.log(storedIP);
                     console.log('No Server');
-                }
+                } // eo if-else
             } catch (error) {
                 console.error('Error initializing app:', error);
                 setInitialRoute('ConnectESP32');
-            }
-        };
+            } // eo try-catch
+        }; // eo initialApp::
 
         initializeApp();
-    }, []);
+    }, []); // eo useEffect
 
     if (!initialRoute) {
-        return null; // Or some loading screen
-    }
+        return null;
+    } // eo if
     return (
         <SafeAreaProvider>
             <AppProvider>
@@ -117,8 +127,8 @@ const App = () => {
                 </NavigationContainer>
             </AppProvider>
         </SafeAreaProvider>
-    );
-};
+    ); // eo return
+}; // eo App::
 
 export default App;
 

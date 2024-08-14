@@ -7,6 +7,8 @@
 
 	Description: For the home page of the app
 ---------------------------------------------------------------------------*/
+
+// Import dependencies ===================================================================================
 import React, { useEffect, useState, useContext } from 'react';
 import {View, Text, StyleSheet, RefreshControl, ScrollView, useColorScheme, Platform} from 'react-native';
 import { StatusBar } from 'expo-status-bar';
@@ -20,7 +22,18 @@ import { createNotificationChannel } from '../components/PushNotificationConfig'
 import checkESP32Server from "../components/checkESP32Server";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import {StackActions, useIsFocused} from '@react-navigation/native';
+import Logo from '../components/Logo'
+//=========================================================================================================
 
+
+/*>>> HomeScreen: =====================================================
+Author:		Aswin Sreeraj
+Date:		20/06/2024
+Modified:	None
+Desc:		Set up the home screen for user dashboard
+Input: 		None
+Returns:	None
+=============================================================================*/
 const HomeScreen = ({ navigation }) => {
     const [refreshing, setRefreshing] = useState(false);
     const [sensorData, setSensorData] = useState({});
@@ -43,9 +56,9 @@ const HomeScreen = ({ navigation }) => {
                 navigation.dispatch(
                     StackActions.replace('ConnectESP32')
                 );
-            }
-        }
-    }
+            } // eo if
+        } // eo if
+    } // eo fetchIP::
 
 
     const requestNotificationPermission = async () => {
@@ -55,14 +68,15 @@ const HomeScreen = ({ navigation }) => {
                 const status = await request(PERMISSIONS.ANDROID.POST_NOTIFICATIONS);
                 if (status !== RESULTS.GRANTED) {
                     console.warn('Notification permission not granted');
-                }
-            }
-        }
-    };
+                } // eo if
+            } // eo if
+        } // eo if
+    }; // eo requestNotificationPermission::
 
     useEffect(() => {
         requestNotificationPermission();
     }, []);
+
 
     const parseData = (dataString) => {
         if (!dataString) return {};
@@ -80,28 +94,28 @@ const HomeScreen = ({ navigation }) => {
                 const subCommandCode = parseInt(values[1], 10);
                 if (subCommandCode === 1) {
                     data.senseTemp = parseInt(values[2],10);
-                }
+                } // eo if
                 if (subCommandCode === 2) {
                     data.odorValue = parseInt(values[2],10);
-                }
+                } // eo if
                 if (subCommandCode === 3) {
                     data.waterLevel = parseInt(values[2],10);
-                }
+                } // eo if
                 if (subCommandCode === 4) {
                     data.foodLevel = parseInt(values[2],10);
-                }
-            }
-        });
+                } // eo if
+            } // eo if
+        }) // eo forEach
 
         return data;
-    };
+    }; // eo parseData::
 
     const parseHealth = (dataString) => {
         if (!dataString) {
             data.hRStatus = "";
             data.bodyTemp = "";
             return {};
-        }
+        } // eo if
         const data ={};
 
         const values = dataString.split(',');
@@ -110,7 +124,7 @@ const HomeScreen = ({ navigation }) => {
 
         return data;
 
-    }
+    } // eo parseHealth::
 
     const getSensorData = async () => {
         try {
@@ -118,54 +132,53 @@ const HomeScreen = ({ navigation }) => {
             const response = await fetch(ESP32URL);
             if (!response.ok) {
                 throw new Error(`HTTP error! Status: ${response.status}`);
-            }
+            } // eo if
             console.log(response);
             const json = await response.json();
-            if (json.dataFromPIC) {
+            if (json.sensorData) {
                 //console.log(json.dataFromPIC);
-                const data = parseData(json.dataFromPIC);
+                const data = parseData(json.sensorData);
                 setSensorData(data);
             } else {
                 //console.error('dataFromPIC not found in response');
-            }
+            } // eo if-else
             if(json.healthStatus) {
                 //console.log(json.healthStatus);
                 const data = parseHealth(json.healthStatus);
                 setHealthData(data);
                 if (data.hRStatus === 'Abnormal') {
                     showNotification('Health Alert', 'Heart rate is abnormal!');
-                }
+                } // eo if
 
                 if (data.bodyTempStatus === 'High') {
                     showNotification('Health Alert', 'Body temperature is high!');
-                }
+                } // eo if
             }
             else {
                 //console.error('healthStatus not found in response');
-            }
+            } // eo if-else
         } catch (error) {
             console.error('Error fetching sensor data:', error.message);
             console.log('Server IP:', serverIP);
         } finally {
             setLoading(false);
-        }
-    };
+        } // eo try-catch-finally
+    }; // eo getSensorData::
 
 
     useEffect(() => {
         configureBackgroundFetch();
         createNotificationChannel();
-        fetchIP();
-    }, []);
+    }, []); // eo useEffect
 
 
     useEffect(() => {
-        if (serverIP && isFocused && (!stopFetch)) {
+        if (!stopFetch) {
             getSensorData();
             const interval = setInterval(getSensorData, 10000);
             return () => clearInterval(interval);
         }
-    }, [serverIP, isFocused]);
+    }, [serverIP, isFocused]); // eo useEffect
 
     const onRefresh = async () => {
         setRefreshing(true);
@@ -174,7 +187,7 @@ const HomeScreen = ({ navigation }) => {
             getSensorData();
         }
         setRefreshing(false);
-    };
+    }; // eo onRefresh::
 
     const styles = setColorScheme();
     const colors = useColorScheme();
@@ -198,7 +211,10 @@ const HomeScreen = ({ navigation }) => {
             ) : (
                 <View>
                     <StatusBar style={colors === 'dark' ? 'light' : 'dark'} />
-                    <Text style={styles.header}>Pet HUB</Text>
+                    <View style={styles.headerContainer}>
+                        <Logo />
+                        <Text style={styles.header}>Pet HUB</Text>
+                    </View>
                     <View style={styles.section}>
                         <Text style={styles.sectionHeader}>Environment</Text>
                         <View style={styles.row}>
@@ -290,8 +306,8 @@ const HomeScreen = ({ navigation }) => {
                 </View>
             )}
         </ScrollView>
-    );
-};
+    ); // eo return
+}; // eo HomeScreen::
 
 const setColorScheme = () => {
     const colors = useColorScheme();
@@ -302,6 +318,13 @@ const setColorScheme = () => {
             padding: 20,
             paddingTop: '15%',
             backgroundColor: colors === 'dark' ? 'black' : 'white',
+        },
+        headerContainer: {
+            marginTop: 20,
+            flexDirection: 'row',
+            alignContent: 'center',
+            justifyItems: 'center',
+            marginBottom: 20,
         },
         header: {
             color: colors === 'dark' ? 'white' : 'black',
@@ -353,7 +376,7 @@ const setColorScheme = () => {
             borderRadius: 3,
         }
     });
-}
+} // eo setColorScheme
 
 export default HomeScreen;
 
