@@ -8,7 +8,7 @@
 	Description: Configuration Screen for schedule and core module configuration
 ---------------------------------------------------------------------------*/
 import React, {useContext, useEffect, useState} from 'react';
-import { View, Text, StyleSheet, useColorScheme, ScrollView } from 'react-native';
+import {View, Text, StyleSheet, useColorScheme, ScrollView, RefreshControl} from 'react-native';
 import MCIIcon from "react-native-vector-icons/MaterialCommunityIcons";
 import FA6Icon from "react-native-vector-icons/FontAwesome6";
 import AppContext from "../global/AppContext";
@@ -34,6 +34,7 @@ const ConfigurationScreen = () => {
     const [isLoading, setLoading] = useState(true);
     const { serverIP } = useContext(AppContext);
     const [configData, setConfigData] = useState({});
+    const [refreshing, setRefreshing] = useState(false);
 
     const ESP32URL = `http://${serverIP}:8081/`;
 
@@ -94,7 +95,7 @@ const ConfigurationScreen = () => {
                 const data = parseData(json.configData);
                 setConfigData(data);
             } else {
-                console.error('dataFromPIC not found in response');
+                console.error('configData not found in response');
             }
         } catch (error) {
             console.error('Error fetching schedule and config data:', error);
@@ -106,17 +107,32 @@ const ConfigurationScreen = () => {
     useEffect(() => {
         if (serverIP && isFocused) {
             getSchedule();
-            const interval = setInterval(getSchedule, 10000);
+            const interval = setInterval(getSchedule, 1000);
             return () => clearInterval(interval);
         }
     }, [serverIP, isFocused]); // eo useEffect
+
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        fetchIP();
+        if(!stopFetch) {
+            getSchedule();
+        }
+        setRefreshing(false);
+    }; // eo onRefresh::
 
     const iconColor = colors === 'dark' ? 'black' : 'white';
     const iconBG = colors === 'dark' ? 'white' : 'black';
     const iconSize = 20;
 
     return (
-        <ScrollView style={styles.container}>
+        <ScrollView
+            refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+            style={styles.container}
+        >
             <View style={styles.headerContainer}>
                 <Logo />
                 <Text style={styles.header}>Pet HUB</Text>
